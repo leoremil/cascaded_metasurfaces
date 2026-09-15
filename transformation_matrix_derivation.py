@@ -5,7 +5,7 @@ Created on Mon Sep 14 16:46:23 2026
 @author: lremilla
 """
 
-from sympy import symbols, Function, Eq, I, exp, Derivative, solve, zeros, init_printing
+from sympy import symbols, Function, Eq, I, exp, Derivative, solve, zeros, init_printing, Matrix
 from sympy.vector import CoordSys3D, curl
 from IPython.display import display
 
@@ -21,7 +21,7 @@ m, eps, mu = symbols("m epsilon_n mu_n")
 rho_n, rho_PEC = symbols("rho_n rho_PEC")
 k_z = symbols("k_z")
 t, w = symbols("t omega")
-k_rho = symbols("k_rho")
+k_rho = symbols("k_rhon")
 
 rho = coordinate_system.rho
 phi = coordinate_system.phi
@@ -43,20 +43,28 @@ faraday_law = (curl(E_tot).doit() + mu*Derivative(H_tot,t).doit()).to_matrix(coo
 ampere_law = (curl(H_tot).doit() - eps*Derivative(E_tot,t).doit()).to_matrix(coordinate_system)
 
 # Isolate each field component. Each row is rho, phi, and z component respectively
-H_vec = zeros(3,1)
-E_vec = zeros(3,1)
+H_eqs = Eq(Matrix([H_rho(rho,phi),
+                   H_phi(rho,phi),
+                   H_z(rho,phi)]),
+           Matrix([solve(faraday_law[0],H_rho(rho,phi))[0],
+                   solve(faraday_law[1],H_phi(rho,phi))[0],
+                   solve(faraday_law[2],H_z(rho,phi))[0]]))
 
-for i, c in enumerate([H_rho(rho,phi), H_phi(rho,phi), H_z(rho,phi)]):
-    H_vec[i] = solve(faraday_law[i],c)
-for i, c in enumerate([E_rho(rho,phi), E_phi(rho,phi), E_z(rho,phi)]):
-    E_vec[i] = solve(ampere_law[i],c)
+E_eqs = Eq(Matrix([E_rho(rho,phi),
+                   E_phi(rho,phi),
+                   E_z(rho,phi)]),
+           Matrix([solve(ampere_law[0],E_rho(rho,phi))[0],
+                   solve(ampere_law[1],E_phi(rho,phi))[0],
+                   solve(ampere_law[2],E_z(rho,phi))[0]]))
+
+
 
 #Find each component only in terms of H_z and E_z by subbing equations for rho and phi components from Maxwell's
 print("Solving for field components in terms of z-components...")
-non_z_component_rhss = [H_vec[0], H_vec[1], E_vec[0], E_vec[1]]
-non_z_components = [H_rho(rho,phi), H_phi(rho,phi),E_rho(rho,phi), E_phi(rho,phi)]
-H_vec_in_z_terms = zeros(3,1)
-E_vec_in_z_terms = zeros(3,1)
+non_z_component_rhss = [H_eqs.rhs[0], H_eqs.rhs[1], E_eqs.rhs[0], E_eqs.rhs[1]]
+non_z_components = [H_eqs.lhs[0], H_eqs.lhs[1], E_eqs.lhs[0], E_eqs.lhs[1]]
+H_vec_in_z_terms = [0]*3
+E_vec_in_z_terms = [0]*3
 
 #go through each component RHS (equation)
 for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
@@ -68,13 +76,13 @@ for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
             #Messy, but solve for desired component (same index as RHS) after subbing in the found non-z component. Subtract desired component as these are expressions and they are implicitly equal to zero.
             search_component_rhs = non_z_component_rhss[search_component_index]
             if component_rhs_index in [0,1]:
-                H_vec_in_z_terms[component_rhs_index] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component,desired_component)
+                H_vec_in_z_terms[component_rhs_index] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component,desired_component)[0]
             else:
-                E_vec_in_z_terms[component_rhs_index - 2] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component, desired_component)
+                E_vec_in_z_terms[component_rhs_index - 2] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component, desired_component)[0]
 
 #Sub in k_rho for easy comparison to references
-H_vec_in_z_terms = H_vec_in_z_terms.subs(eps*mu*w**2-k_z**2,k_rho**2)
-E_vec_in_z_terms = E_vec_in_z_terms.subs(eps*mu*w**2-k_z**2,k_rho**2)
+H_vec_in_z_terms = Matrix(H_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
+E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 #%% Display the field components and verify
 display(E_vec_in_z_terms[0])
 display(E_vec_in_z_terms[1])
