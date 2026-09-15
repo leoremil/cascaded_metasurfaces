@@ -7,6 +7,7 @@ Created on Mon Sep 14 16:46:23 2026
 
 from sympy import symbols, Function, Eq, I, exp, Derivative, solve, zeros, init_printing
 from sympy.vector import CoordSys3D, curl
+from IPython.display import display
 
 init_printing(use_latex=True)
 #Create cylindrical coordinate system
@@ -16,10 +17,11 @@ coordinate_system = CoordSys3D('CS', transformation='cylindrical',variable_names
 
 print("Setting up symbols...")
 E, H = symbols("E H", cls=Function)
-m, eps, mu = symbols("m epsilon mu")
+m, eps, mu = symbols("m epsilon_n mu_n")
 rho_n, rho_PEC = symbols("rho_n rho_PEC")
 k_z = symbols("k_z")
 t, w = symbols("t omega")
+k_rho = symbols("k_rho")
 
 rho = coordinate_system.rho
 phi = coordinate_system.phi
@@ -69,7 +71,10 @@ for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
                 H_vec_in_z_terms[component_rhs_index] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component,desired_component)
             else:
                 E_vec_in_z_terms[component_rhs_index - 2] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component, desired_component)
-                
+
+#Sub in k_rho for easy comparison to references
+H_vec_in_z_terms = H_vec_in_z_terms.subs(eps*mu*w**2-k_z**2,k_rho**2)
+E_vec_in_z_terms = H_vec_in_z_terms.subs(eps*mu*w**2-k_z**2,k_rho**2)
 #%% Display the field components and verify
 display(E_vec_in_z_terms[0])
 display(E_vec_in_z_terms[1])
