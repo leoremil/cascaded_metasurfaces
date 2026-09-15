@@ -16,19 +16,21 @@ coordinate_system = CoordSys3D('CS', transformation='cylindrical',variable_names
 #Define the symbols needed
 
 print("Setting up symbols...")
-E, H = symbols("E H", cls=Function)
-m, eps, mu = symbols("m epsilon_n mu_n")
-rho_n, rho_PEC = symbols("rho_n rho_PEC")
-k_z = symbols("k_z")
-t, w = symbols("t omega")
-k_rho = symbols("k_rhon")
-F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")
-H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)
+E, H = symbols("E H", cls=Function) #E and H fields
+m, eps, mu = symbols("m epsilon_n mu_n")#azimuthal order and material params
+rho_n, rho_PEC = symbols("rho_n rho_PEC")#radii of the MTS
+k_z = symbols("k_z")#longitudinal propagation constant
+t, w = symbols("t omega")#time and angular frequency
+k_rho = symbols("k_rhon")#radial propagation constant
+F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
+H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
 
+#Coordinates
 rho = coordinate_system.rho
 phi = coordinate_system.phi
 z = coordinate_system.z
 
+#field components
 E_rho, E_phi, E_z = symbols("E_rho E_phi E_z", cls=Function)
 H_rho, H_phi, H_z = symbols("H_rho H_phi H_z", cls=Function)
 
