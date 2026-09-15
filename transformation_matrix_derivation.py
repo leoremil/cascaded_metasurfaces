@@ -22,6 +22,8 @@ rho_n, rho_PEC = symbols("rho_n rho_PEC")
 k_z = symbols("k_z")
 t, w = symbols("t omega")
 k_rho = symbols("k_rhon")
+F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")
+H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)
 
 rho = coordinate_system.rho
 phi = coordinate_system.phi
@@ -35,7 +37,9 @@ H_rho, H_phi, H_z = symbols("H_rho H_phi H_z", cls=Function)
 E_tot = (E_rho(rho,phi)*coordinate_system.i + E_phi(rho,phi)*coordinate_system.j + E_z(rho,phi)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)
 H_tot = (H_rho(rho,phi)*coordinate_system.i + H_phi(rho,phi)*coordinate_system.j + H_z(rho,phi)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)
 
-#todo: define the ansatz for the z-components
+#define the ansatz for the z-components
+E_z_expression = (F_1*H_1m(k_rho*rho) + F_2*H_2m(k_rho*rho))*exp(-I*m*phi)
+H_z_expression = (G_1*H_1m(k_rho*rho) + G_2*H_2m(k_rho*rho))*exp(-I*m*phi)
 
 print("Solving Maxwell's equations...")
 # plug into Maxwell's to get vector equations. Turn into Matrix objects
@@ -88,4 +92,5 @@ E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 # display(E_vec_in_z_terms[1])
 # display(H_vec_in_z_terms[0])
 # display(H_vec_in_z_terms[1])
-#%%
+#%% Create a matrix equation: on one side have the field components after subbing in the expressions for the z components, on the other have the modal amplitude coefficiencts multiplied by an arbitrary matrix which is the field transformation matrix in Romina's thesis. Solve for these components.
+M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))
