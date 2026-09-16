@@ -69,8 +69,8 @@ E_eqs = Eq(Matrix([E_rho(rho,phi),
 print("Solving for field components in terms of z-components...")
 non_z_component_rhss = [H_eqs.rhs[0], H_eqs.rhs[1], E_eqs.rhs[0], E_eqs.rhs[1]]
 non_z_components = [H_eqs.lhs[0], H_eqs.lhs[1], E_eqs.lhs[0], E_eqs.lhs[1]]
-H_vec_in_z_terms = [0]*3
-E_vec_in_z_terms = [0]*3
+H_vec_in_z_terms = [0, 0, H_z_expression]
+E_vec_in_z_terms = [0, 0, E_z_expression]
 
 #go through each component RHS (equation)
 for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
@@ -101,7 +101,7 @@ print("Solve for the transformation matrix...")
 M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))
 coefficients = Matrix([F_1, F_2, G_1, G_2])
 
-tangential_fields = Matrix(H_vec_in_z_terms[0:2,0].col_join(E_vec_in_z_terms[0:2,0])).subs({E_z(rho,phi):E_z_expression,H_z(rho,phi):H_z_expression}).doit()
+tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({E_z(rho,phi):E_z_expression,H_z(rho,phi):H_z_expression}).doit()
 tangential_fields = tangential_fields/exp(-I*m*phi)# WARNING: this is done because doing it Romina's way the azimuthal variation is canceled out when solving Maxwell's equations. I didn't do it so I could compare easily to Pozar. Canceling the azimuthal variation here now puts us in line with Romina's work earlier.
 
 transformation_definition_eq = Eq(tangential_fields,M*coefficients)
@@ -114,4 +114,4 @@ for row in range(4):
     for mode_coef in coefficients:
         matrix_coefficients[row_eq_rhs.coeff(mode_coef)] = row_eq_lhs.coeff(mode_coef)
 
-M_definition = M.subs(matrix_coefficients)
+M_final = M.subs(matrix_coefficients)
