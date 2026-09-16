@@ -102,7 +102,7 @@ M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))
 coefficients = Matrix([F_1, F_2, G_1, G_2])
 
 tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({E_z(rho,phi):E_z_expression,H_z(rho,phi):H_z_expression}).doit()
-tangential_fields = tangential_fields/exp(-I*m*phi)# WARNING: this is done because doing it Romina's way the azimuthal variation is canceled out when solving Maxwell's equations. I didn't do it so I could compare easily to Pozar. Canceling the azimuthal variation here now puts us in line with Romina's work earlier.
+tangential_fields = tangential_fields/exp(-I*m*phi)# WARNING: this is done because doing it Romina's way the azimuthal variation is canceled out when solving Maxwell's equations. I didn't do it in this file so I could compare my component definitions more easily to Pozar. Canceling the azimuthal variation here now puts us in line with Romina's work earlier.
 
 transformation_definition_eq = Eq(tangential_fields,M*coefficients)
 
