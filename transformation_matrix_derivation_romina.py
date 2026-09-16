@@ -5,9 +5,9 @@ This version has the sinusoidal variation assumed at the beginning like in Romin
 @author: lremilla
 """
 
-from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix
+from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify
 from sympy.vector import CoordSys3D, curl
-# from IPython.display import display
+from IPython.display import display
 
 init_printing(use_latex=True)
 #Create cylindrical coordinate system
@@ -40,8 +40,8 @@ E_tot = (E_rho(rho)*coordinate_system.i + E_phi(rho)*coordinate_system.j + E_z(r
 H_tot = (H_rho(rho)*coordinate_system.i + H_phi(rho)*coordinate_system.j + H_z(rho)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)*exp(-I*m*phi)
 
 #define the ansatz for the z-components
-E_z_expression = (F_1*H_1m(k_rho*rho) + F_2*H_2m(k_rho*rho))*exp(-I*m*phi)
-H_z_expression = (G_1*H_1m(k_rho*rho) + G_2*H_2m(k_rho*rho))*exp(-I*m*phi)
+E_z_expression = (F_1*H_1m(k_rho*rho) + F_2*H_2m(k_rho*rho))
+H_z_expression = (G_1*H_1m(k_rho*rho) + G_2*H_2m(k_rho*rho))
 
 print("Solving Maxwell's equations...")
 # plug into Maxwell's to get vector equations. Turn into Matrix objects
@@ -90,10 +90,10 @@ for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
 H_vec_in_z_terms = Matrix(H_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 #%% Display the field components and verify with Pozar
-display(E_vec_in_z_terms[0])
-display(E_vec_in_z_terms[1])
-display(H_vec_in_z_terms[0])
-display(H_vec_in_z_terms[1])
+# display(E_vec_in_z_terms[0].expand())
+# display(E_vec_in_z_terms[1].expand())
+# display(H_vec_in_z_terms[0].expand())
+# display(H_vec_in_z_terms[1].expand())
 #%% Create a matrix equation: on one side have the field components after subbing in the expressions for the z components, on the other have the modal amplitude coefficiencts multiplied by an arbitrary matrix which is the field transformation matrix in Romina's thesis. Solve for these components.
 # Order of components will differ from Romina's. She does it one way then reorders it for some reason in her code anyways.
 #My order: [E_rho, E_phi, H_rho, H_phi], and then [F_1, F_2, G_1, G_2] for coefficients
@@ -114,3 +114,7 @@ for row in range(4):
         matrix_coefficients[row_eq_rhs.coeff(mode_coef)] = row_eq_lhs.coeff(mode_coef)
 
 M_definition = M.subs(matrix_coefficients)
+
+M_final_eq = Eq(tangential_fields,M_definition*coefficients)
+if M_final_eq.simplify():
+    print("M fits definition!")
