@@ -4,13 +4,22 @@ Created on Mon Sep 14 16:46:23 2026
 Derive the field transformation matrix starting from the Ampere, Faraday law, and
 basic assumptions about the field variation in the waveguide.
 
+Export the transformation matrix expression as a python function
+
 This version has the sinusoidal variation assumed at the beginning like in Romina's work
 @author: lremilla
 """
+from inspect import getsource
 
-from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy
+from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy, lambdify, sqrt, pi
 from sympy.vector import CoordSys3D, curl
 from IPython.display import display
+
+#Put the imports for the final python function export here. Requires trial and error to get right
+file_name_numeric = "transformationMatrix.py"
+modules_lambdification = {"mpmath":"pi, sqrt, hankel1, hankel2, mpf"}
+
+file_name_symbolic = "transformationMatrixSymbolic.txt"
 
 init_printing(use_latex=True)
 #Create cylindrical coordinate system
@@ -21,9 +30,8 @@ coordinate_system = CoordSys3D('CS', transformation='cylindrical',variable_names
 print("Setting up symbols...")
 E, H = symbols("E H", cls=Function) #E and H fields
 m, eps, mu = symbols("m epsilon_n mu_n")#azimuthal order and material params
-rho_n, rho_PEC = symbols("rho_n rho_PEC")#radii of the MTS
 k_z = symbols("k_z")#longitudinal propagation constant
-t, w = symbols("t omega")#time and angular frequency
+t, w, f = symbols("t omega f")#time and angular frequency and frequency
 k_rho = symbols("k_rhon")#radial propagation constant
 F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
 H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
@@ -37,6 +45,9 @@ z = coordinate_system.z
 #field components
 E_rho, E_phi, E_z = symbols("E_rho E_phi E_z", cls=Function)
 H_rho, H_phi, H_z = symbols("H_rho H_phi H_z", cls=Function)
+
+#expression for k_rho
+k_rho_expression = sqrt(eps*mu*w**2 - k_z**2)
 
 #Modal coefficient vector
 coefficients = Matrix([F_1, F_2, G_1, G_2])
@@ -93,8 +104,8 @@ for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
                 E_vec_in_z_terms[component_rhs_index - 2] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component, desired_component)[0]
 
 #Sub in k_rho for easy comparison to references
-H_vec_in_z_terms = Matrix(H_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
-E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
+H_vec_in_z_terms = Matrix(H_vec_in_z_terms).subs(k_rho_expression**2,k_rho**2)
+E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(k_rho_expression**2,k_rho**2)
 #%% Display the field components and verify with Romina's thesis
 display(E_vec_in_z_terms[0].expand())
 display(E_vec_in_z_terms[1].expand())
@@ -139,3 +150,26 @@ transformation_verification_eq = transformation_verification_eq.xreplace({
 
 if simplify(transformation_verification_eq.expand()):
     print("Success: M matches definition.")
+    
+M_final = M_final.xreplace({
+    Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel1(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho),
+    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel2(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho)
+    })
+    
+#%% Create a python function that generates a transformation matrix that is useable in numeric calculations
+# First sub in some expressions so the matrix depends only on frequency, material params, radius under consideration, and mode order
+
+M_final = M_final.subs(k_rho, k_rho_expression)
+M_final = M_final.subs(w, 2*pi*f)
+
+M_final_numeric = lambdify([f, k_z, m, eps, mu, rho], M_final, modules = list(modules_lambdification))
+
+function_code_numeric = getsource(M_final_numeric).replace("_lambdifygenerated","transformationMatrix")
+with open(file_name_numeric,"w") as file:
+    for module in list(modules_lambdification):
+        file.write(f"from {module} import {modules_lambdification[module]}\n\n")
+    file.write(function_code_numeric)
+#%% Same but keep it as a symbolic expression for the dispersion relation derivation
+# Note: file that imports it needs the exact same symbols and coordinate system derivations. Might need to create a central file that holds all the symbols and the coordinate system.
+with open(file_name_symbolic,'w') as file:
+    file.write(str(M_final))
