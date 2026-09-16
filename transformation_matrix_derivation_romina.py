@@ -5,7 +5,7 @@ This version has the sinusoidal variation assumed at the beginning like in Romin
 @author: lremilla
 """
 
-from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify
+from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy
 from sympy.vector import CoordSys3D, curl
 from IPython.display import display
 
@@ -24,6 +24,7 @@ t, w = symbols("t omega")#time and angular frequency
 k_rho = symbols("k_rhon")#radial propagation constant
 F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
 H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
+M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))#matrix of symbols to be solved for the transformation matrix
 
 #Coordinates
 rho = coordinate_system.rho
@@ -34,6 +35,8 @@ z = coordinate_system.z
 E_rho, E_phi, E_z = symbols("E_rho E_phi E_z", cls=Function)
 H_rho, H_phi, H_z = symbols("H_rho H_phi H_z", cls=Function)
 
+#Modal coefficient vector
+coefficients = Matrix([F_1, F_2, G_1, G_2])
 
 # the equations for total fields assuming time harmonics, sinusoidal longitudinal and azimuthal variation
 E_tot = (E_rho(rho)*coordinate_system.i + E_phi(rho)*coordinate_system.j + E_z(rho)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)*exp(-I*m*phi)
@@ -44,7 +47,7 @@ E_z_expression = (F_1*H_1m(k_rho*rho) + F_2*H_2m(k_rho*rho))
 H_z_expression = (G_1*H_1m(k_rho*rho) + G_2*H_2m(k_rho*rho))
 
 print("Solving Maxwell's equations...")
-# plug into Maxwell's to get vector equations. Turn into Matrix objects
+# Plug total field equations into Maxwell's to get vector equations. Turn into Matrix objects. Must be written RHS - LHS = 0 because the Eq() function doesn't work for vector calc stuff apparently
 faraday_law = (curl(E_tot).doit() + mu*Derivative(H_tot,t).doit()).to_matrix(coordinate_system)
 ampere_law = (curl(H_tot).doit() - eps*Derivative(E_tot,t).doit()).to_matrix(coordinate_system)
 
@@ -90,17 +93,14 @@ for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
 H_vec_in_z_terms = Matrix(H_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 #%% Display the field components and verify with Romina's thesis
-# display(E_vec_in_z_terms[0].expand())
-# display(E_vec_in_z_terms[1].expand())
-# display(H_vec_in_z_terms[0].expand())
-# display(H_vec_in_z_terms[1].expand())
+display(E_vec_in_z_terms[0].expand())
+display(E_vec_in_z_terms[1].expand())
+display(H_vec_in_z_terms[0].expand())
+display(H_vec_in_z_terms[1].expand())
 #%% Create a matrix equation: on one side have the field components after subbing in the expressions for the z components, on the other have the modal amplitude coefficiencts multiplied by an arbitrary matrix which is the field transformation matrix in Romina's thesis. Solve for these components.
 # Order of components will differ from Romina's. She does it one way then reorders it for some reason in her code anyways.
 #My order: [E_phi, E_z, H_phi, H_z], and then [F_1, F_2, G_1, G_2] for coefficients
 print("Solve for the transformation matrix...")
-M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))
-coefficients = Matrix([F_1, F_2, G_1, G_2])
-
 tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({E_z(rho):E_z_expression,H_z(rho):H_z_expression}).doit()
 
 transformation_definition_eq = Eq(tangential_fields,M*coefficients)
@@ -121,3 +121,18 @@ for row in range(4):
         print("")#placeholder
 
 M_final = M.subs(matrix_coefficients)
+
+#%% Sub in hankel functions for their symbols to perform final verification
+transformation_verification_eq = Eq(tangential_fields,M_final*coefficients).subs({
+    H_1m(k_rho*rho) : hankel1(m,k_rho*rho),
+    H_2m(k_rho*rho) : hankel2(m,k_rho*rho)
+    })
+#Evaluated derivatives of a function symbol must be substituted seperately. Obtain the dummy variable so we can sub in the derivatives.
+dummy_var = list(transformation_verification_eq.atoms(Dummy))[0]
+transformation_verification_eq = transformation_verification_eq.xreplace({
+    Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel1(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho),
+    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel2(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho)
+    })
+
+if simplify(transformation_verification_eq.expand()):
+    print("Success: M matches definition.")
