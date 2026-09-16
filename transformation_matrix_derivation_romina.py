@@ -17,7 +17,7 @@ from IPython.display import display
 
 #Put the imports for the final python function export here. Requires trial and error to get right
 file_name_numeric = "transformationMatrix.py"
-modules_lambdification = {"mpmath":"pi, sqrt, hankel1, hankel2, mpf"}
+modules_lambdification = {"mpmath":"pi, sqrt, hankel1, hankel2, mpf, matrix"}
 
 file_name_symbolic = "transformationMatrixSymbolic.txt"
 
@@ -36,6 +36,7 @@ k_rho = symbols("k_rhon")#radial propagation constant
 F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
 H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
 M = Matrix(4, 4, lambda i, j: symbols(f'M_{i+1}_{j+1}'))#matrix of symbols to be solved for the transformation matrix
+p = symbols("rho")#actual rho for subbing in at the end because exporting CS variables sucks
 
 #Coordinates
 rho = coordinate_system.rho
@@ -151,9 +152,15 @@ transformation_verification_eq = transformation_verification_eq.xreplace({
 if simplify(transformation_verification_eq.expand()):
     print("Success: M matches definition.")
     
+#sub in the hankel stuff again seperately
+M_final = M_final.subs({
+    H_1m(k_rho*rho) : hankel1(m,k_rho*rho),
+    H_2m(k_rho*rho) : hankel2(m,k_rho*rho)
+    })    
+dummy_var2 = list(M_final.atoms(Dummy))[0]
 M_final = M_final.xreplace({
-    Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel1(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho),
-    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel2(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho)
+    Derivative(H_1m(dummy_var2),dummy_var2).subs(dummy_var2,k_rho*rho) : hankel1(m,dummy_var2).diff(dummy_var2).subs(dummy_var2,k_rho*rho),
+    Derivative(H_2m(dummy_var2),dummy_var2).subs(dummy_var,k_rho*rho) : hankel2(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho)
     })
     
 #%% Create a python function that generates a transformation matrix that is useable in numeric calculations
@@ -161,10 +168,13 @@ M_final = M_final.xreplace({
 
 M_final = M_final.subs(k_rho, k_rho_expression)
 M_final = M_final.subs(w, 2*pi*f)
+M_final = M_final.subs(rho,p)
 
-M_final_numeric = lambdify([f, k_z, m, eps, mu, rho], M_final, modules = list(modules_lambdification))
+M_final_numeric = lambdify([f, k_z, m, eps, mu, p], M_final, modules = list(modules_lambdification))
 
-function_code_numeric = getsource(M_final_numeric).replace("_lambdifygenerated","transformationMatrix")
+#force mpmath matrix function
+function_code_numeric = getsource(M_final_numeric).replace("_lambdifygenerated","transformationMatrix").replace("ImmutableDenseMatrix","matrix")
+
 with open(file_name_numeric,"w") as file:
     for module in list(modules_lambdification):
         file.write(f"from {module} import {modules_lambdification[module]}\n\n")
