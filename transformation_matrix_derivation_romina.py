@@ -89,7 +89,7 @@ for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
 #Sub in k_rho for easy comparison to references
 H_vec_in_z_terms = Matrix(H_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
-#%% Display the field components and verify with Pozar
+#%% Display the field components and verify with Romina's thesis
 # display(E_vec_in_z_terms[0].expand())
 # display(E_vec_in_z_terms[1].expand())
 # display(H_vec_in_z_terms[0].expand())
