@@ -69,8 +69,8 @@ E_eqs = Eq(Matrix([E_rho(rho),
 print("Solving for field components in terms of z-components...")
 non_z_component_rhss = [H_eqs.rhs[0], H_eqs.rhs[1], E_eqs.rhs[0], E_eqs.rhs[1]]
 non_z_components = [H_eqs.lhs[0], H_eqs.lhs[1], E_eqs.lhs[0], E_eqs.lhs[1]]
-H_vec_in_z_terms = [0]*3
-E_vec_in_z_terms = [0]*3
+H_vec_in_z_terms = [0,0,H_z(rho)]
+E_vec_in_z_terms = [0,0,E_z(rho)]
 
 #go through each component RHS (equation)
 for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
@@ -96,12 +96,12 @@ E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(eps*mu*w**2-k_z**2,k_rho**2)
 # display(H_vec_in_z_terms[1].expand())
 #%% Create a matrix equation: on one side have the field components after subbing in the expressions for the z components, on the other have the modal amplitude coefficiencts multiplied by an arbitrary matrix which is the field transformation matrix in Romina's thesis. Solve for these components.
 # Order of components will differ from Romina's. She does it one way then reorders it for some reason in her code anyways.
-#My order: [E_rho, E_phi, H_rho, H_phi], and then [F_1, F_2, G_1, G_2] for coefficients
+#My order: [E_phi, E_z, H_phi, H_z], and then [F_1, F_2, G_1, G_2] for coefficients
 print("Solve for the transformation matrix...")
 M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))
 coefficients = Matrix([F_1, F_2, G_1, G_2])
 
-tangential_fields = Matrix(H_vec_in_z_terms[0:2,0].col_join(E_vec_in_z_terms[0:2,0])).subs({E_z(rho):E_z_expression,H_z(rho):H_z_expression}).doit()
+tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({E_z(rho):E_z_expression,H_z(rho):H_z_expression}).doit()
 
 transformation_definition_eq = Eq(tangential_fields,M*coefficients)
 
@@ -110,11 +110,14 @@ matrix_coefficients = {}
 for row in range(4):
     row_eq_lhs = transformation_definition_eq.lhs[row].expand().collect(coefficients)
     row_eq_rhs = transformation_definition_eq.rhs[row].collect(coefficients)
+    print("current row equations:")
+    display(row_eq_lhs), display(row_eq_rhs)
+    print("\n")
     for mode_coef in coefficients:
         matrix_coefficients[row_eq_rhs.coeff(mode_coef)] = row_eq_lhs.coeff(mode_coef)
+        print("Current mode coeff:"),display(mode_coef)
+        print("Detected matrix element:"),display(row_eq_rhs.coeff(mode_coef))
+        print("Detected matrix element value:"),display(row_eq_lhs.coeff(mode_coef))
+        print("")#placeholder
 
-M_definition = M.subs(matrix_coefficients)
-
-M_final_eq = Eq(tangential_fields,M_definition*coefficients)
-if M_final_eq.simplify():
-    print("M fits definition!")
+M_final = M.subs(matrix_coefficients)
