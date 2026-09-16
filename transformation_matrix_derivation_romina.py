@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Sep 14 16:46:23 2026
+Derive the field transformation matrix starting from the Ampere, Faraday law, and
+basic assumptions about the field variation in the waveguide.
+
 This version has the sinusoidal variation assumed at the beginning like in Romina's work
 @author: lremilla
 """
@@ -24,7 +27,7 @@ t, w = symbols("t omega")#time and angular frequency
 k_rho = symbols("k_rhon")#radial propagation constant
 F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
 H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
-M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))#matrix of symbols to be solved for the transformation matrix
+M = Matrix(4, 4, lambda i, j: symbols(f'M_{i+1}_{j+1}'))#matrix of symbols to be solved for the transformation matrix
 
 #Coordinates
 rho = coordinate_system.rho
