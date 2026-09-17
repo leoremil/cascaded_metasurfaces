@@ -11,9 +11,11 @@ This version has the sinusoidal variation assumed at the beginning like in Romin
 """
 from inspect import getsource
 
-from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy, lambdify, sqrt, pi, srepr
+from sympy import symbols, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy, lambdify, pi, srepr
 from sympy.vector import CoordSys3D, curl
 from IPython.display import display
+
+from symbol_definitions import m, eps, mu, k_z, t, w, f, k_rho, F_1, F_2, G_1, G_2, H_1m, H_2m, H_1m_p, H_2m_p, E_rho, E_phi, E_z, H_rho, H_phi, H_z, k_rho_expression
 
 #Put the imports for the final python function export here. Requires trial and error to get right
 file_name_numeric = "transformationMatrix.py"
@@ -28,29 +30,15 @@ coordinate_system = CoordSys3D('CS', transformation='cylindrical',variable_names
 #Define the symbols needed
 
 print("Setting up symbols...")
-E, H = symbols("E H", cls=Function) #E and H fields
-m, eps, mu = symbols("m epsilon_n mu_n")#azimuthal order and material params
-k_z = symbols("k_z")#longitudinal propagation constant
-t, w, f = symbols("t omega f")#time and angular frequency and frequency
-k_rho = symbols("k_rhon")#radial propagation constant
-F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
-H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
-H_1m_p, H_2m_p = symbols("H^{(1)}'_m H^{(2)}'_m", cls=Function)#Hankel function derivatives
+
+
 M = Matrix(4, 4, lambda i, j: symbols(f'M_{i+1}_{j+1}'))#matrix of symbols to be solved for the transformation matrix
 p = symbols("rho")#actual rho for subbing in at the end because exporting CS variables sucks
-x = symbols("x")#placeholder varible
 
 #Coordinates
 rho = coordinate_system.rho
 phi = coordinate_system.phi
 z = coordinate_system.z
-
-#field components
-E_rho, E_phi, E_z = symbols("E_rho E_phi E_z", cls=Function)
-H_rho, H_phi, H_z = symbols("H_rho H_phi H_z", cls=Function)
-
-#expression for k_rho
-k_rho_expression = sqrt(eps*mu*w**2 - k_z**2)
 
 #Modal coefficient vector
 coefficients = Matrix([F_1, F_2, G_1, G_2])
