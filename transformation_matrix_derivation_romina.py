@@ -31,6 +31,7 @@ modules_lambdification = {"mpmath":"pi, sqrt, hankel1, hankel2, mpf, matrix"}
 file_name_symbolic = "transformationMatrixSymbolic.txt"
 
 init_printing(use_latex=True)
+
 #Create cylindrical coordinate system
 coordinate_system = CoordSys3D('CS', transformation='cylindrical',variable_names=('rho','phi','z'))
 
@@ -80,57 +81,67 @@ E_eqs = Eq(Matrix([E_rho(rho),
 
 #Find each component only in terms of H_z and E_z by subbing equations for rho and phi components from Maxwell's
 print("Solving for field components in terms of z-components...")
-non_z_component_rhss = [H_eqs.rhs[0], H_eqs.rhs[1], E_eqs.rhs[0], E_eqs.rhs[1]]
+non_z_component_rhss = [H_eqs.rhs[0], H_eqs.rhs[1], E_eqs.rhs[0], E_eqs.rhs[1]]#right hand sides
 non_z_components = [H_eqs.lhs[0], H_eqs.lhs[1], E_eqs.lhs[0], E_eqs.lhs[1]]
 H_vec_in_z_terms = [0,0,H_z(rho)]
 E_vec_in_z_terms = [0,0,E_z(rho)]
 
 #go through each component RHS (equation)
-for component_rhs_index, component_rhs in enumerate(non_z_component_rhss):
-    desired_component = non_z_components[component_rhs_index]
+for desired_component_rhs_index, desired_component_rhs in enumerate(non_z_component_rhss):
+    desired_component = non_z_components[desired_component_rhs_index]
+    
     #For current RHS find the non-z component present
-    for search_component_index, search_component in enumerate(non_z_components):
-        if solve(component_rhs,search_component):
-            #First and second indices are H_rho and H_phi. Third and fourth are E_rho and E_phi.
-            #Messy, but solve for desired component (same index as RHS) after subbing in the found non-z component. Subtract desired component as these are expressions and they are implicitly equal to zero.
+    for search_component_index, search_component in enumerate(non_z_components):   
+        if solve(desired_component_rhs,search_component):
             search_component_rhs = non_z_component_rhss[search_component_index]
-            if component_rhs_index in [0,1]:
-                H_vec_in_z_terms[component_rhs_index] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component,desired_component)[0]
+            
+            #Messy, but solve for desired component (same index as RHS) after subbing in the found non-z component. Subtract desired component as these are expressions and they are implicitly equal to zero.
+            #First and second indices are H_rho and H_phi. Third and fourth are E_rho and E_phi.
+            if desired_component_rhs_index in [0,1]: 
+                H_vec_in_z_terms[desired_component_rhs_index] = solve(desired_component_rhs.subs(search_component,search_component_rhs) - desired_component,desired_component)[0]
+                
             else:
-                E_vec_in_z_terms[component_rhs_index - 2] = solve(component_rhs.subs(search_component,search_component_rhs) - desired_component, desired_component)[0]
+                E_vec_in_z_terms[desired_component_rhs_index - 2] = solve(desired_component_rhs.subs(search_component,search_component_rhs) - desired_component, desired_component)[0]
 
 #Sub in k_rho for easy comparison to references
 H_vec_in_z_terms = Matrix(H_vec_in_z_terms).subs(k_rho_expression**2,k_rho**2)
 E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(k_rho_expression**2,k_rho**2)
+
 #%% Display the field components and verify with Romina's thesis
 display(E_vec_in_z_terms[0].expand())
 display(E_vec_in_z_terms[1].expand())
 display(H_vec_in_z_terms[0].expand())
 display(H_vec_in_z_terms[1].expand())
-#%% Create a matrix equation: on one side have the field components after subbing in the expressions for the z components, on the other have the modal amplitude coefficiencts multiplied by an arbitrary matrix which is the field transformation matrix in Romina's thesis. Solve for these components.
+
+#%% Create a matrix equation: on one side have the field components after subbing in the expressions for the z components, on the other have the modal amplitude coefficients multiplied by an arbitrary matrix which is the field transformation matrix in Romina's thesis. Solve for the elements of this matrix.
+
 # Order of components will differ from Romina's. She does it one way then reorders it for some reason in her code anyways.
 #My order: [E_phi, E_z, H_phi, H_z], and then [F_1, F_2, G_1, G_2] for coefficients
 print("Solve for the transformation matrix...")
-tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({E_z(rho):E_z_expression,H_z(rho):H_z_expression}).doit()
+tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({
+    E_z(rho):E_z_expression,
+    H_z(rho):H_z_expression
+    }).doit()
 
 transformation_definition_eq = Eq(tangential_fields,M*coefficients)
 
-#Way to automate solving for the tranformation matrix coefficients by inspection. Matches the matrix element value to the modal coefficient factor
-matrix_coefficients = {}
+#Way to automate solving for the tranformation matrix elements by inspection. Matches the matrix element value to the modal coefficient factor
+matrix_elements = {}
 for row in range(4):
     row_eq_lhs = transformation_definition_eq.lhs[row].expand().collect(coefficients)
     row_eq_rhs = transformation_definition_eq.rhs[row].collect(coefficients)
     print("current row equations:")
     display(row_eq_lhs), display(row_eq_rhs)
     print("\n")
+    
     for mode_coef in coefficients:
-        matrix_coefficients[row_eq_rhs.coeff(mode_coef)] = row_eq_lhs.coeff(mode_coef)
+        matrix_elements[row_eq_rhs.coeff(mode_coef)] = row_eq_lhs.coeff(mode_coef)
         print("Current mode coeff:"),display(mode_coef)
         print("Detected matrix element:"),display(row_eq_rhs.coeff(mode_coef))
         print("Detected matrix element value:"),display(row_eq_lhs.coeff(mode_coef))
-        print("")#placeholder
+        print("")#placeholder for breakpoint
 
-M_final = M.subs(matrix_coefficients)
+M_final = M.subs(matrix_elements)
 
 #%% Sub in hankel functions for their symbols to perform final verification
 transformation_verification_eq = Eq(tangential_fields,M_final*coefficients).subs({
@@ -166,6 +177,7 @@ M_final_numeric_syms = M_final_numeric_syms.subs(w, 2*pi*f)
 M_final_numeric = lambdify([f, k_z, m, eps, mu, rho], M_final_numeric_syms, modules = list(modules_lambdification))
 
 #force mpmath matrix function
+#todo: find a way to make this better so you don't get problems if you need to use numpy instead
 function_code_numeric = getsource(M_final_numeric).replace("_lambdifygenerated","transformationMatrix").replace("ImmutableDenseMatrix","matrix")
 
 with open(file_name_numeric,"w") as file:
@@ -173,7 +185,6 @@ with open(file_name_numeric,"w") as file:
         file.write(f"from {module} import {modules_lambdification[module]}\n\n")
     file.write(function_code_numeric)
 #%% Same but keep it as a symbolic expression for the dispersion relation derivation
-# Note: file that imports it needs the exact same symbols and coordinate system derivations. Might need to create a central file that holds all the symbols and the coordinate system.
 
 #Replace all evaluated derivatives of Hankel functions with a H'_1m or H'_2m symbol. Other symbolic calcs are easier leaving the derivatives un-expanded.
 M_final_symbolic = M_final.xreplace({
@@ -182,4 +193,3 @@ M_final_symbolic = M_final.xreplace({
     })
 with open(file_name_symbolic,'w') as file:
     file.write(srepr(M_final_symbolic))
-    
