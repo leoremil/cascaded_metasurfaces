@@ -11,7 +11,7 @@ This version has the sinusoidal variation assumed at the beginning like in Romin
 """
 from inspect import getsource
 
-from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy, lambdify, sqrt, pi
+from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy, lambdify, sqrt, pi, srepr
 from sympy.vector import CoordSys3D, curl
 from IPython.display import display
 
@@ -186,7 +186,9 @@ with open(file_name_numeric,"w") as file:
 #Replace all evaluated derivatives of Hankel functions with a H'_1m or H'_2m symbol. Other symbolic calcs are easier leaving the derivatives un-expanded.
 M_final_symbolic = M_final.xreplace({
     Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho),
-    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho)
+    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_2m_p(k_rho*rho)
     })
+M_final_symbolic = M_final_symbolic.subs(rho,p)
 with open(file_name_symbolic,'w') as file:
-    file.write(str(M_final_symbolic))
+    file.write(srepr(M_final_symbolic))
+    
