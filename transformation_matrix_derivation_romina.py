@@ -35,8 +35,10 @@ t, w, f = symbols("t omega f")#time and angular frequency and frequency
 k_rho = symbols("k_rhon")#radial propagation constant
 F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
 H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
+H_1m_p, H_2m_p = symbols("H^{(1)}'_m H^{(2)}'_m", cls=Function)#Hankel function derivatives
 M = Matrix(4, 4, lambda i, j: symbols(f'M_{i+1}_{j+1}'))#matrix of symbols to be solved for the transformation matrix
 p = symbols("rho")#actual rho for subbing in at the end because exporting CS variables sucks
+x = symbols("x")#placeholder varible
 
 #Coordinates
 rho = coordinate_system.rho
@@ -151,26 +153,25 @@ transformation_verification_eq = transformation_verification_eq.xreplace({
 
 if simplify(transformation_verification_eq.expand()):
     print("Success: M matches definition.")
-    
-#sub in the hankel stuff again seperately
-M_final = M_final.subs({
-    H_1m(k_rho*rho) : hankel1(m,k_rho*rho),
-    H_2m(k_rho*rho) : hankel2(m,k_rho*rho)
-    })    
-dummy_var2 = list(M_final.atoms(Dummy))[0]
-M_final = M_final.xreplace({
-    Derivative(H_1m(dummy_var2),dummy_var2).subs(dummy_var2,k_rho*rho) : hankel1(m,dummy_var2).diff(dummy_var2).subs(dummy_var2,k_rho*rho),
-    Derivative(H_2m(dummy_var2),dummy_var2).subs(dummy_var,k_rho*rho) : hankel2(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho)
-    })
-    
 #%% Create a python function that generates a transformation matrix that is useable in numeric calculations
 # First sub in some expressions so the matrix depends only on frequency, material params, radius under consideration, and mode order
 
-M_final = M_final.subs(k_rho, k_rho_expression)
-M_final = M_final.subs(w, 2*pi*f)
-M_final = M_final.subs(rho,p)
+#Create a temporary symbolic expression for M before it gets exported. All Hankel functions and their derivatives are subbed in
+M_final_numeric_syms = M_final.subs({
+    H_1m(k_rho*rho) : hankel1(m,k_rho*rho),
+    H_2m(k_rho*rho) : hankel2(m,k_rho*rho)
+    })    
 
-M_final_numeric = lambdify([f, k_z, m, eps, mu, p], M_final, modules = list(modules_lambdification))
+M_final_numeric_syms = M_final_numeric_syms.xreplace({
+    Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel1(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho),
+    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : hankel2(m,dummy_var).diff(dummy_var).subs(dummy_var,k_rho*rho)
+    })
+
+M_final_numeric_syms = M_final_numeric_syms.subs(k_rho, k_rho_expression)
+M_final_numeric_syms = M_final_numeric_syms.subs(w, 2*pi*f)
+M_final_numeric_syms = M_final_numeric_syms.subs(rho,p)
+
+M_final_numeric = lambdify([f, k_z, m, eps, mu, p], M_final_numeric_syms, modules = list(modules_lambdification))
 
 #force mpmath matrix function
 function_code_numeric = getsource(M_final_numeric).replace("_lambdifygenerated","transformationMatrix").replace("ImmutableDenseMatrix","matrix")
@@ -181,5 +182,11 @@ with open(file_name_numeric,"w") as file:
     file.write(function_code_numeric)
 #%% Same but keep it as a symbolic expression for the dispersion relation derivation
 # Note: file that imports it needs the exact same symbols and coordinate system derivations. Might need to create a central file that holds all the symbols and the coordinate system.
+
+#Replace all evaluated derivatives of Hankel functions with a H'_1m or H'_2m symbol. Other symbolic calcs are easier leaving the derivatives un-expanded.
+M_final_symbolic = M_final.xreplace({
+    Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho),
+    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho)
+    })
 with open(file_name_symbolic,'w') as file:
-    file.write(str(M_final))
+    file.write(str(M_final_symbolic))
