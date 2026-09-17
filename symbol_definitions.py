@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Sep 17 12:50:42 2026
-Contains definitions of all symbols to be used throughout this  project
+Contains definitions of symbols to be used throughout this  project
 @author: lremilla
 """
 
