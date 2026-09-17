@@ -23,6 +23,10 @@ F_12, F_22, G_12, G_22 = symbols("F_12 F_22 G_12 G_22")
 with open("transformationMatrixSymbolic.txt",'r') as file:
     M = sympify(file.read())
 
+#Radial H component
+with open("radialHSymbolic.txt",'r') as file:
+    H_radial = sympify(file.read())
+
 #M at PEC and MTS radii
 M_PEC = M.subs(rho,rho_PEC)
 M_MTS = M.subs(rho,rho_MTS)
