@@ -8,6 +8,7 @@ z components are assumed to take the form used in Romina's thesis so compare the
 
 Inputs:
     modules_lambdification (dict): each key is a python module and their entries are a string consisting of a comma seperated list of functions to import from those modules.
+    
 Exports:
     The transformation matrix expression as a numeric python function (transformationMatrix.py)
     The transformation matrix expression as a fully symbolic sympy matrix (transformationMatrixSymbolic.py)
@@ -19,11 +20,13 @@ from sympy import symbols, Eq, I, exp, Derivative, solve, init_printing, Matrix,
 from sympy.vector import CoordSys3D, curl
 from IPython.display import display
 
-from symbol_definitions import m, eps, mu, k_z, t, w, f, k_rho, F_1, F_2, G_1, G_2, H_1m, H_2m, H_1m_p, H_2m_p, E_rho, E_phi, E_z, H_rho, H_phi, H_z, k_rho_expression
+from symbol_definitions import m, eps, mu, k_z, t, w, f, k_rho, F_1, F_2, G_1, G_2, H_1m, H_2m, H_1m_p, H_2m_p, E_rho, E_phi, E_z, H_rho, H_phi, H_z, k_rho_expression, rho
 
+#================================================
 #Put the imports for the final python function export here. Requires trial and error to get right
 file_name_numeric = "transformationMatrix.py"
 modules_lambdification = {"mpmath":"pi, sqrt, hankel1, hankel2, mpf, matrix"}
+#================================================
 
 file_name_symbolic = "transformationMatrixSymbolic.txt"
 
@@ -31,25 +34,22 @@ init_printing(use_latex=True)
 #Create cylindrical coordinate system
 coordinate_system = CoordSys3D('CS', transformation='cylindrical',variable_names=('rho','phi','z'))
 
-#Define the symbols needed
-
-print("Setting up symbols...")
-
+#Define the symbols and expressions needed
+print("Setting up symbols and expressions...")
 
 M = Matrix(4, 4, lambda i, j: symbols(f'M_{i+1}_{j+1}'))#matrix of symbols to be solved for the transformation matrix
-p = symbols("rho")#actual rho for subbing in at the end because exporting CS variables sucks
 
-#Coordinates
-rho = coordinate_system.rho
-phi = coordinate_system.phi
-z = coordinate_system.z
+#Coordinate system position variables. THESE ARE DISTINCT FROM USER DEFINED SYMBOLS AND ARE NOT FRIENDLY FOR EXPORT OR IMPORT!!!!
+_rho = coordinate_system.rho
+_phi = coordinate_system.phi
+_z = coordinate_system.z
 
 #Modal coefficient vector
 coefficients = Matrix([F_1, F_2, G_1, G_2])
 
 # the equations for total fields assuming time harmonics, sinusoidal longitudinal and azimuthal variation
-E_tot = (E_rho(rho)*coordinate_system.i + E_phi(rho)*coordinate_system.j + E_z(rho)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)*exp(-I*m*phi)
-H_tot = (H_rho(rho)*coordinate_system.i + H_phi(rho)*coordinate_system.j + H_z(rho)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)*exp(-I*m*phi)
+E_tot = (E_rho(_rho)*coordinate_system.i + E_phi(_rho)*coordinate_system.j + E_z(_rho)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*_z)*exp(-I*m*_phi)
+H_tot = (H_rho(_rho)*coordinate_system.i + H_phi(_rho)*coordinate_system.j + H_z(_rho)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*_z)*exp(-I*m*_phi)
 
 #define the ansatz for the z-components
 E_z_expression = (F_1*H_1m(k_rho*rho) + F_2*H_2m(k_rho*rho))
@@ -57,8 +57,9 @@ H_z_expression = (G_1*H_1m(k_rho*rho) + G_2*H_2m(k_rho*rho))
 
 print("Solving Maxwell's equations...")
 # Plug total field equations into Maxwell's to get vector equations. Turn into Matrix objects. Must be written RHS - LHS = 0 because the Eq() function doesn't work for vector calc stuff apparently
-faraday_law = (curl(E_tot).doit() + mu*Derivative(H_tot,t).doit()).to_matrix(coordinate_system)
-ampere_law = (curl(H_tot).doit() - eps*Derivative(E_tot,t).doit()).to_matrix(coordinate_system)
+#Remove the special coordinate _rho for the user defined rho
+faraday_law = (curl(E_tot).doit() + mu*Derivative(H_tot,t).doit()).to_matrix(coordinate_system).subs(_rho,rho)
+ampere_law = (curl(H_tot).doit() - eps*Derivative(E_tot,t).doit()).to_matrix(coordinate_system).subs(_rho,rho)
 
 # Isolate each field component. Each row is rho, phi, and z component respectively
 H_eqs = Eq(Matrix([H_rho(rho),
@@ -114,7 +115,7 @@ tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3
 
 transformation_definition_eq = Eq(tangential_fields,M*coefficients)
 
-#Way to basically solve for the tranformation matrix coefficients by inspection. Matches the matrix element value to the modal coefficient factor
+#Way to automate solving for the tranformation matrix coefficients by inspection. Matches the matrix element value to the modal coefficient factor
 matrix_coefficients = {}
 for row in range(4):
     row_eq_lhs = transformation_definition_eq.lhs[row].expand().collect(coefficients)
@@ -161,9 +162,8 @@ M_final_numeric_syms = M_final_numeric_syms.xreplace({
 
 M_final_numeric_syms = M_final_numeric_syms.subs(k_rho, k_rho_expression)
 M_final_numeric_syms = M_final_numeric_syms.subs(w, 2*pi*f)
-M_final_numeric_syms = M_final_numeric_syms.subs(rho,p)
 
-M_final_numeric = lambdify([f, k_z, m, eps, mu, p], M_final_numeric_syms, modules = list(modules_lambdification))
+M_final_numeric = lambdify([f, k_z, m, eps, mu, rho], M_final_numeric_syms, modules = list(modules_lambdification))
 
 #force mpmath matrix function
 function_code_numeric = getsource(M_final_numeric).replace("_lambdifygenerated","transformationMatrix").replace("ImmutableDenseMatrix","matrix")
@@ -180,7 +180,6 @@ M_final_symbolic = M_final.xreplace({
     Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho),
     Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_2m_p(k_rho*rho)
     })
-M_final_symbolic = M_final_symbolic.subs(rho,p)
 with open(file_name_symbolic,'w') as file:
     file.write(srepr(M_final_symbolic))
     
