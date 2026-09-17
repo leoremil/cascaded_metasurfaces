@@ -4,9 +4,13 @@ Created on Mon Sep 14 16:46:23 2026
 Derive the field transformation matrix starting from the Ampere, Faraday law, and
 basic assumptions about the field variation in the waveguide.
 
-Export the transformation matrix expression as a python function
+z components are assumed to take the form used in Romina's thesis so compare the results here to that document.
 
-This version has the sinusoidal variation assumed at the beginning like in Romina's work
+Inputs:
+    modules_lambdification (dict): each key is a python module and their entries are a string consisting of a comma seperated list of functions to import from those modules.
+Exports:
+    The transformation matrix expression as a numeric python function (transformationMatrix.py)
+    The transformation matrix expression as a fully symbolic sympy matrix (transformationMatrixSymbolic.py)
 @author: lremilla
 """
 from inspect import getsource
