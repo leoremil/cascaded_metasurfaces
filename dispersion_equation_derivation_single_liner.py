@@ -8,24 +8,17 @@ Derivation of the dispersion equation using the transformation matrix derived in
 from sympy import init_printing, symbols, Matrix, Function, sympify, Eq, pi, hankel1, hankel2,sqrt
 from IPython.display import display
 
+from symbol_definitions import m, eps, mu, k_z, t, w, f, k_rho, H_1m, H_2m, rho, H_1m_p, H_2m_p, H_z, H_phi
+
 init_printing(use_latex=True)
 
 #Define the symbols needed
 
 print("Setting up symbols...")
-E, H = symbols("E H", cls=Function) #E and H fields
-m, eps, mu = symbols("m epsilon_n mu_n")#azimuthal order and material params
-k_z = symbols("k_z")#longitudinal propagation constant
-t, w, f = symbols("t omega f")#time and angular frequency and frequency
-k_rho = symbols("k_rhon")#radial propagation constant
-H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
-rho = symbols("rho")
 rho_MTS, rho_PEC = symbols("rho_MTS rho_PEC")
 F_0, G_0 = symbols("F_0 G_0")
 F_12, F_22, G_12, G_22 = symbols("F_12 F_22 G_12 G_22")
-H_z, H_phi = symbols("H_z, H_phi")
 
-H_1m_prime, H_2m_prime = symbols("H_{m}^{(1)}' H_{m}^{(2)}'", cls=Function)
 #transformation matrix for any radius within region n
 with open("transformationMatrixSymbolic.txt",'r') as file:
     M = sympify(file.read())
@@ -42,10 +35,7 @@ coefficients_region1 = Matrix([F_0, F_0, G_0, G_0])/2
 print("Finding coefficients for fields in region 2...")
 coefficients_region2 = Matrix([F_12, F_22, G_12, G_22])
 
-tangential_fields_PEC = Matrix([0 ,0 ,H_z , H_phi])
+tangential_fields_PEC = Matrix([0 ,0 ,H_z(rho_PEC) , H_phi(rho_PEC)])
 
-PEC_fields_eq = Eq(tangential_fields_PEC, M_PEC*coefficients_region2).subs({2*pi*f:w,
-                                                                            sqrt(eps*mu*w**2-k_z**2):k_rho,
-                                                                            hankel1(m-1,k_rho*rho_PEC)/2-hankel1(m+1,k_rho*rho_PEC)/2: H_1m_prime(k_rho*rho_PEC),
-                                                                            hankel2(m-1,k_rho*rho_PEC)/2-hankel2(m+1,k_rho*rho_PEC)/2: H_2m_prime(k_rho*rho_PEC)})
+PEC_fields_eq = Eq(tangential_fields_PEC, M_PEC*coefficients_region2)
 
