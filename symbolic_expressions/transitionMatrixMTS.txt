@@ -1,0 +1,1 @@
+MutableDenseMatrix([[Integer(1), Integer(0), Integer(0), Integer(0)], [Integer(0), Integer(1), Integer(0), Integer(0)], [Mul(Integer(-1), Rational(1, 2), Symbol('Y_zp')), Mul(Integer(-1), Rational(1, 2), Symbol('Y_zz')), Integer(1), Integer(0)], [Mul(Rational(1, 2), Symbol('Y_pp')), Mul(Rational(1, 2), Symbol('Y_pz')), Integer(0), Integer(1)]])

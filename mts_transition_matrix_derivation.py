@@ -7,11 +7,12 @@ Derive the transition matrix for the tangential fields for the MTS
 """
 from os.path import join
 
-from sympy import Eq, Matrix, init_printing, Function, symbols,solve
+from sympy import Eq, Matrix, init_printing, Function, symbols, srepr
 from IPython.display import display
 
-from symbol_definitions import Y_pp, Y_zz, Y_zp, Y_pz, H_z, H_phi, E_z, E_phi, rho
+from symbol_definitions import Y_pp, Y_zz, Y_zp, Y_pz, rho
 
+file_name_symbolic = "transitionMatrixMTS.txt"
 init_printing(use_latex=True)
 
 #symbol definitions unique to this file
@@ -61,3 +62,7 @@ for row in range(T_MTS.rows):
         component = row_rhs.coeff(element)
         matrix_elements[element] = row_lhs.coeff(component)
 
+T_MTS_final = T_MTS.subs(matrix_elements)
+
+with open(join("symbolic_expressions", file_name_symbolic),'w') as file:
+    file.write(srepr(T_MTS_final))
