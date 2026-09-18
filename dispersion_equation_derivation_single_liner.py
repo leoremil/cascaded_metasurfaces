@@ -34,7 +34,7 @@ F_PEC, G_PEC = symbols("F_PEC G_PEC")
 #Hankel functions are Jm(x)+jYm(x) or Jm(x)-jYm(x). Ym(x) goes to infinity at x=0. Solving for modal coefficients such that the Ym(x) term is zero leads to F1=F2=F0/2 and G1=G2=G0/2. Pretty easy to do on paper and hard to mess up so just state it here
 coefficients_region1 = Matrix([F_0, F_0, G_0, G_0])/2
 
-#%% Find modal coefficients at the PEC. Tangential electric fields and radial H must be zero. solve for the coefficients using the transformation matrix formalism:
+#%% Find modal coefficients at the PEC. Tangential electric fields must be zero. solve for the coefficients using the transformation matrix formalism:
 print("Finding coefficients for fields in region 2...")
 coefficients_region2 = Matrix([F_12, F_22, G_12, G_22])
 
