@@ -24,3 +24,5 @@ H_rho, H_phi, H_z = symbols("H_rho H_phi H_z", cls=Function)
 
 #expression for k_rho
 k_rho_expression = sqrt(eps*mu*w**2 - k_z**2)
+
+Y_pp, Y_zz, Y_zp, Y_pz = symbols("Y_pp Y_zz Y_zp Y_pz")
