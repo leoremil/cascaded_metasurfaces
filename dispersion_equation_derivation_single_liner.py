@@ -18,7 +18,6 @@ init_printing(use_latex=True)
 print("Setting up symbols...")
 rho_MTS, rho_PEC = symbols("rho_MTS rho_PEC")
 F_0, G_0 = symbols("F_0 G_0")
-F_12, F_22, G_12, G_22 = symbols("F_12 F_22 G_12 G_22")
 
 #transformation matrix for any radius within region n
 with open(join("symbolic_expressions", "transformationMatrixSymbolic.txt"),'r') as file:
@@ -27,6 +26,9 @@ with open(join("symbolic_expressions", "transformationMatrixSymbolic.txt"),'r') 
 #M at PEC and MTS radii
 M_PEC = M.subs(rho,rho_PEC)
 M_MTS = M.subs(rho,rho_MTS)
+
+#Coefficients and factors for amplitudes in region 2
+F_12, F_22, G_12, G_22 = symbols("F_12 F_22 G_12 G_22")
 g_1, g_2 = symbols("g_1 g_2")
 F_PEC, G_PEC = symbols("F_PEC G_PEC")
 
@@ -58,9 +60,12 @@ display(PEC_zero_components_step1[0])
 display(PEC_zero_components_step1[1])
 #%% Observe that row 1 now shows that G_12 and G_22 are proportional to eachother as well. solve for G_12 in terms of G_22
 G_12_expression = solve(PEC_zero_components_step1[0],G_12)[0]
-#%% At this point, the coefficients are the same as in the thesis. Solve for the proportionality factors of F_12, and G_12 like in the thesis
+#%% At this point, the coefficients are the same as in the thesis with F_22 = F_PEC and G_22 = G_PEC. Solve for the proportionality factors of F_12, and G_12 like in the thesis
 display(F_12_expression)
 display(G_12_expression)
 #%%Solve for the proportionality factors
 g_1_expression = F_12_expression.coeff(F_22)
 g_2_expression = G_12_expression.coeff(G_22)
+
+#%%SOLVING FOR THE DISPERSION RELATION
+#=====================================
