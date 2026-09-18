@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Sep 14 16:46:23 2026
-
+Similar to the other transformation matrix derivation but with a different assumed longitudinal field variation. This is to match Pozar's Microwave Engineering derivation which is a reliable source for validation. Because the results of that book were reproduced, the other derivation is most likely correct also.
 @author: lremilla
 """
 
-from sympy import symbols, Function, Eq, I, exp, Derivative, solve, init_printing, Matrix
+from sympy import symbols, Eq, I, exp, Derivative, solve, init_printing, Matrix
 from sympy.vector import CoordSys3D, curl
 from IPython.display import display
+
+from symbol_definitions import m, eps, mu, k_z, t, w, k_rho, F_1, F_2, G_1, G_2, H_1m, H_2m, E_rho, E_phi, E_z, H_rho, H_phi, H_z
 
 init_printing(use_latex=True)
 #Create cylindrical coordinate system
@@ -16,32 +18,19 @@ coordinate_system = CoordSys3D('CS', transformation='cylindrical',variable_names
 #Define the symbols needed
 
 print("Setting up symbols...")
-E, H = symbols("E H", cls=Function) #E and H fields
-m, eps, mu = symbols("m epsilon_n mu_n")#azimuthal order and material params
-rho_n, rho_PEC = symbols("rho_n rho_PEC")#radii of the MTS
-k_z = symbols("k_z")#longitudinal propagation constant
-t, w = symbols("t omega")#time and angular frequency
-k_rho = symbols("k_rhon")#radial propagation constant
-F_1, F_2, G_1, G_2 = symbols("F_1n F_2n G_1n G_2n")#modal amplitude coefficients
-H_1m, H_2m = symbols("H^{(1)}_m H^{(2)}_m", cls=Function)#Hankel functions
 
 #Coordinates
-rho = coordinate_system.rho
-phi = coordinate_system.phi
-z = coordinate_system.z
-
-#field components
-E_rho, E_phi, E_z = symbols("E_rho E_phi E_z", cls=Function)
-H_rho, H_phi, H_z = symbols("H_rho H_phi H_z", cls=Function)
-
+_rho = coordinate_system.rho
+_phi = coordinate_system.phi
+_z = coordinate_system.z
 
 # the equations for total fields assuming time harmonics
-E_tot = (E_rho(rho,phi)*coordinate_system.i + E_phi(rho,phi)*coordinate_system.j + E_z(rho,phi)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)
-H_tot = (H_rho(rho,phi)*coordinate_system.i + H_phi(rho,phi)*coordinate_system.j + H_z(rho,phi)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*z)
+E_tot = (E_rho(_rho,_phi)*coordinate_system.i + E_phi(_rho,_phi)*coordinate_system.j + E_z(_rho,_phi)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*_z)
+H_tot = (H_rho(_rho,_phi)*coordinate_system.i + H_phi(_rho,_phi)*coordinate_system.j + H_z(_rho,_phi)*coordinate_system.k)*exp(I*w*t)*exp(-I*k_z*_z)
 
 #define the ansatz for the z-components
-E_z_expression = (F_1*H_1m(k_rho*rho) + F_2*H_2m(k_rho*rho))*exp(-I*m*phi)
-H_z_expression = (G_1*H_1m(k_rho*rho) + G_2*H_2m(k_rho*rho))*exp(-I*m*phi)
+E_z_expression = (F_1*H_1m(k_rho*_rho) + F_2*H_2m(k_rho*_rho))*exp(-I*m*_phi)
+H_z_expression = (G_1*H_1m(k_rho*_rho) + G_2*H_2m(k_rho*_rho))*exp(-I*m*_phi)
 
 print("Solving Maxwell's equations...")
 # plug into Maxwell's to get vector equations. Turn into Matrix objects
@@ -49,19 +38,19 @@ faraday_law = (curl(E_tot).doit() + mu*Derivative(H_tot,t).doit()).to_matrix(coo
 ampere_law = (curl(H_tot).doit() - eps*Derivative(E_tot,t).doit()).to_matrix(coordinate_system)
 
 # Isolate each field component. Each row is rho, phi, and z component respectively
-H_eqs = Eq(Matrix([H_rho(rho,phi),
-                   H_phi(rho,phi),
-                   H_z(rho,phi)]),
-           Matrix([solve(faraday_law[0],H_rho(rho,phi))[0],
-                   solve(faraday_law[1],H_phi(rho,phi))[0],
-                   solve(faraday_law[2],H_z(rho,phi))[0]]))
+H_eqs = Eq(Matrix([H_rho(_rho,_phi),
+                   H_phi(_rho,_phi),
+                   H_z(_rho,_phi)]),
+           Matrix([solve(faraday_law[0],H_rho(_rho,_phi))[0],
+                   solve(faraday_law[1],H_phi(_rho,_phi))[0],
+                   solve(faraday_law[2],H_z(_rho,_phi))[0]]))
 
-E_eqs = Eq(Matrix([E_rho(rho,phi),
-                   E_phi(rho,phi),
-                   E_z(rho,phi)]),
-           Matrix([solve(ampere_law[0],E_rho(rho,phi))[0],
-                   solve(ampere_law[1],E_phi(rho,phi))[0],
-                   solve(ampere_law[2],E_z(rho,phi))[0]]))
+E_eqs = Eq(Matrix([E_rho(_rho,_phi),
+                   E_phi(_rho,_phi),
+                   E_z(_rho,_phi)]),
+           Matrix([solve(ampere_law[0],E_rho(_rho,_phi))[0],
+                   solve(ampere_law[1],E_phi(_rho,_phi))[0],
+                   solve(ampere_law[2],E_z(_rho,_phi))[0]]))
 
 
 
@@ -101,8 +90,8 @@ print("Solve for the transformation matrix...")
 M = Matrix(4, 4, lambda i, j: symbols(f'M_{i}_{j}'))
 coefficients = Matrix([F_1, F_2, G_1, G_2])
 
-tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({E_z(rho,phi):E_z_expression,H_z(rho,phi):H_z_expression}).doit()
-tangential_fields = tangential_fields/exp(-I*m*phi)# WARNING: this is done because doing it Romina's way the azimuthal variation is canceled out when solving Maxwell's equations. I didn't do it in this file so I could compare my component definitions more easily to Pozar. Canceling the azimuthal variation here now puts us in line with Romina's work earlier.
+tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({E_z(_rho,_phi):E_z_expression,H_z(_rho,_phi):H_z_expression}).doit()
+tangential_fields = tangential_fields/exp(-I*m*_phi)# WARNING: this is done because doing it Romina's way the azimuthal variation is canceled out when solving Maxwell's equations. I didn't do it in this file so I could compare my component definitions more easily to Pozar. Canceling the azimuthal variation here now puts us in line with Romina's work earlier.
 
 transformation_definition_eq = Eq(tangential_fields,M*coefficients)
 
