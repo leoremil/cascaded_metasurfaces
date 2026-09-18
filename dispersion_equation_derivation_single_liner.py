@@ -75,5 +75,6 @@ g_2_expression = G_12_expression.coeff(G_22)
 #%%SOLVING FOR THE DISPERSION RELATION
 #=====================================
 #setup equation for tangential fields at rho_PEC. LHS are the fields in region 1. RHS are the fields in region 2 with the MTS transition matrix applied.
-
-fields_MTS = Eq(M_MTS*coefficients_region1,T_sheet*M_MTS*M_PEC**-1*M_PEC*coefficients_region2)
+coefficients_PEC = Matrix([g_1*F_PEC, F_PEC, g_2*G_PEC, G_PEC])
+fields_MTS = Eq(M_MTS*coefficients_region1,T_sheet*M_MTS*M_PEC**-1*M_PEC*coefficients_PEC)
+#%% Go row by row and eliminate the 
