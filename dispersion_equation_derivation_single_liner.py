@@ -4,6 +4,7 @@ Created on Wed Sep 16 15:47:02 2026
 Derivation of the dispersion equation using the transformation matrix derived in the other script
 @author: lremilla
 """
+from os.path import join
 
 from sympy import init_printing, symbols, Matrix, Function, sympify, Eq, pi, hankel1, hankel2,sqrt
 from IPython.display import display
@@ -20,11 +21,11 @@ F_0, G_0 = symbols("F_0 G_0")
 F_12, F_22, G_12, G_22 = symbols("F_12 F_22 G_12 G_22")
 
 #transformation matrix for any radius within region n
-with open("transformationMatrixSymbolic.txt",'r') as file:
+with open(join("symbolic_expressions", "transformationMatrixSymbolic.txt"),'r') as file:
     M = sympify(file.read())
 
 #Radial H component
-with open("radialHSymbolic.txt",'r') as file:
+with open(join("symbolic_expressions", "radialHSymbolic.txt"),'r') as file:
     H_radial = sympify(file.read())
 
 #M at PEC and MTS radii

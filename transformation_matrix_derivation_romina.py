@@ -15,6 +15,7 @@ Exports:
 @author: lremilla
 """
 from inspect import getsource
+from os.path import join
 
 from sympy import symbols, Eq, I, exp, Derivative, solve, init_printing, Matrix, simplify, hankel1, hankel2, Dummy, lambdify, pi, srepr
 from sympy.vector import CoordSys3D, curl
@@ -181,7 +182,7 @@ M_final_numeric = lambdify([f, k_z, m, eps, mu, rho], M_final_numeric_syms, modu
 #todo: find a way to make this better so you don't get problems if you need to use numpy instead
 function_code_numeric = getsource(M_final_numeric).replace("_lambdifygenerated","transformationMatrix").replace("ImmutableDenseMatrix","matrix")
 
-with open(file_name_numeric,"w") as file:
+with open(join("numeric_expressions",file_name_numeric),"w") as file:
     for module in list(modules_lambdification):
         file.write(f"from {module} import {modules_lambdification[module]}\n\n")
     file.write(function_code_numeric)
@@ -192,7 +193,7 @@ M_final_symbolic = M_final.xreplace({
     Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho),
     Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_2m_p(k_rho*rho)
     })
-with open(file_name_symbolic,'w') as file:
+with open(join("symbolic_expressions", file_name_symbolic),'w') as file:
     file.write(srepr(M_final_symbolic))
 #%% Radial component of the H field is needed for the dispersion equation. Export it too
 H_radial = H_vec_in_z_terms[0,0].subs({
@@ -203,5 +204,5 @@ H_radial = H_vec_in_z_terms[0,0].subs({
 H_radial = H_radial.xreplace({
     Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho),
     Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_2m_p(k_rho*rho)})
-with open(file_name_radial_H,'w') as file:
+with open(join("symbolic_expressions",file_name_radial_H),'w') as file:
     file.write(srepr(H_radial))
