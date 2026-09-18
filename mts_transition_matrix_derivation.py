@@ -53,3 +53,11 @@ T_MTS_definition = T_MTS_definition.subs({
 #Match coefficients by using the following rules:
 #   -Tangential E is continous, i.e. E_2phi = E_1phi, E_z1 = E_z2 so only the z-component can match the z component!
 #   -Only electric currents can cause a discontinuity in H, i.e. H_z1 = admittance*E_tangential + H_z2, H_phi cannot affect H_z or vice versa with this type of structure!
+matrix_elements = {}
+for row in range(T_MTS.rows):
+    row_rhs = T_MTS_definition.rhs[row]
+    row_lhs = T_MTS_definition.lhs[row]
+    for element in T_MTS[row,:]:
+        component = row_rhs.coeff(element)
+        matrix_elements[element] = row_lhs.coeff(component)
+
