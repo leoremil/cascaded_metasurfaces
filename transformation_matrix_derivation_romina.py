@@ -112,15 +112,17 @@ E_vec_in_z_terms = Matrix(E_vec_in_z_terms).subs(k_rho_expression**2,k_rho**2)
 #%% Display the field components and verify with Romina's thesis
 display(E_vec_in_z_terms[0].expand())
 display(E_vec_in_z_terms[1].expand())
+display(E_vec_in_z_terms[2])
 display(H_vec_in_z_terms[0].expand())
 display(H_vec_in_z_terms[1].expand())
+display(H_vec_in_z_terms[2])
 
 #%% Create a matrix equation: on one side have the field components after subbing in the expressions for the z components, on the other have the modal amplitude coefficients multiplied by an arbitrary matrix which is the field transformation matrix in Romina's thesis. Solve for the elements of this matrix.
 
 # Order of components will differ from Romina's. She does it one way then reorders it for some reason in her code anyways.
 #My order: [E_phi, E_z, H_phi, H_z], and then [F_1, F_2, G_1, G_2] for coefficients
 print("Solve for the transformation matrix...")
-tangential_fields = Matrix(H_vec_in_z_terms[1:3,0].col_join(E_vec_in_z_terms[1:3,0])).subs({
+tangential_fields = Matrix(E_vec_in_z_terms[1:3,0].col_join(H_vec_in_z_terms[1:3,0])).subs({
     E_z(rho):E_z_expression,
     H_z(rho):H_z_expression
     }).doit()
