@@ -22,7 +22,12 @@ F_0, G_0 = symbols("F_0 G_0")
 #transformation matrix for any radius within region n
 with open(join("symbolic_expressions", "transformationMatrixSymbolic.txt"),'r') as file:
     M = sympify(file.read())
-
+    
+#transition matrix for the MTS admittance sheet
+with open(join("symbolic_expressions", "transitionMatrixMTS.txt"),'r') as file:
+    T_sheet = sympify(file.read())
+    
+    
 #M at PEC and MTS radii
 M_PEC = M.subs(rho,rho_PEC)
 M_MTS = M.subs(rho,rho_MTS)
@@ -69,3 +74,6 @@ g_2_expression = G_12_expression.coeff(G_22)
 
 #%%SOLVING FOR THE DISPERSION RELATION
 #=====================================
+#setup equation for tangential fields at rho_PEC. LHS are the fields in region 1. RHS are the fields in region 2 with the MTS transition matrix applied.
+
+fields_MTS = Eq(M_MTS*coefficients_region1,T_sheet*M_MTS*M_PEC**-1*M_PEC*coefficients_region2)
