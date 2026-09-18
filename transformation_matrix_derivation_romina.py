@@ -197,14 +197,3 @@ M_final_symbolic = M_final.xreplace({
     })
 with open(join("symbolic_expressions", file_name_symbolic),'w') as file:
     file.write(srepr(M_final_symbolic))
-#%% Radial component of the H field is needed for the dispersion equation. Export it too
-H_radial = H_vec_in_z_terms[0,0].subs({
-    E_z(rho) : E_z_expression,
-    H_z(rho) : H_z_expression
-        }).doit().expand()
-
-H_radial = H_radial.xreplace({
-    Derivative(H_1m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_1m_p(k_rho*rho),
-    Derivative(H_2m(dummy_var),dummy_var).subs(dummy_var,k_rho*rho) : H_2m_p(k_rho*rho)})
-with open(join("symbolic_expressions",file_name_radial_H),'w') as file:
-    file.write(srepr(H_radial))
